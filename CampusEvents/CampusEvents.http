@@ -1,0 +1,40 @@
+@host = http://localhost:5080
+
+### Root
+GET {{host}}/
+
+### Health
+GET {{host}}/health
+
+### Runtime info (useful after Azure deploy)
+GET {{host}}/info
+
+### List seeded campus events
+GET {{host}}/api/events
+
+### Get one event
+GET {{host}}/api/events/11111111-1111-1111-1111-111111111111
+
+### Create event
+POST {{host}}/api/events
+Content-Type: application/json
+
+{
+  "title": "Container Apps Hands-on",
+  "description": "Build and deploy a small API to Azure Container Apps.",
+  "location": "Lab B110",
+  "startsAtUtc": "2026-12-01T13:00:00Z",
+  "capacity": 25
+}
+
+### Register for an event
+POST {{host}}/api/events/11111111-1111-1111-1111-111111111111/registrations
+Content-Type: application/json
+
+{
+  "attendeeName": "Jordan Student",
+  "attendeeEmail": "jordan.student@example.com"
+}
+
+### List registrations for an event
+GET {{host}}/api/events/11111111-1111-1111-1111-111111111111/registrations

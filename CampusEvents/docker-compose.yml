@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: campusevents-db
+    environment:
+      POSTGRES_USER: campus
+      POSTGRES_PASSWORD: localdev   # local only — never a real secret
+      POSTGRES_DB: campusevents
+    ports:
+      - "5434:5432"
+    volumes:
+      - campusevents-pgdata:/var/lib/postgresql/data
+
+volumes:
+  campusevents-pgdata:
