@@ -5,7 +5,7 @@
 //   $env:POSTGRES_ADMIN_PASSWORD = Read-Host "PostgreSQL admin password"
 using 'main.bicep'
 
-param yourName = 'ture06'
+param yourName = 'ture07'
 param ownerEmail = 'hture01@xamk.fi'
 param environment = 'dev'
 // Fresh subscription: F1 quota is 0 in North Europe, West Europe takes no new customers,
