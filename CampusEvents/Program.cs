@@ -59,6 +59,7 @@ app.MapGet("/health", async (AppDbContext db) =>
 app.MapGet("/info", () => Results.Json(new
 {
     application = "CampusEvents",
+    version = "1.1.0", // ← new field
     environment = app.Environment.EnvironmentName,
     machine = Environment.MachineName,
     framework = Environment.Version.ToString(),
