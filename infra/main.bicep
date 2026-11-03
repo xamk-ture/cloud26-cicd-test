@@ -43,7 +43,7 @@ var storageAccountName = 'stcloud26${replace(yourName, '-', '')}${environment}' 
 
 var tags = {
   Environment: environment
-  Course: 'cloud26'
+  Course: 'cloud26-week5'
   Owner: ownerEmail
   ManagedBy: 'Bicep'
 }
