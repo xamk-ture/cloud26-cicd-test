@@ -1,0 +1,42 @@
+name: Infra preview
+
+# Exercise 1: what-if only, on pull requests that touch infra/**.
+# NEVER runs 'az deployment group create' or any other mutating command.
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['infra/**']
+
+permissions:
+  id-token: write      # OIDC token for azure/login
+  contents: read
+
+env:
+  RESOURCE_GROUP: rg-cloud26-${{ vars.YOUR_NAME }}-dev
+  # dev.bicepparam reads the password with readEnvironmentVariable
+  POSTGRES_ADMIN_PASSWORD: ${{ secrets.PG_PASSWORD }}
+
+jobs:
+  what-if:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # PR runs present a different OIDC subject than main-branch runs:
+      #   repo:<owner>/<repo>:pull_request   (not ...:ref:refs/heads/main)
+      # so the identity needs a second federated credential for this subject.
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-if (preview only — nothing is changed)
+        run: |
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters infra/dev.bicepparam

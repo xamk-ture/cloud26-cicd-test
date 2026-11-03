@@ -87,7 +87,7 @@ jobs:
         run: |
           echo "Polling https://$APP_NAME.azurewebsites.net/health ..."
           for i in $(seq 1 10); do
-            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://$APP_NAME.azurewebsites.net/health")
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://$APP_NAME.azurewebsites.net/health" || true)
             echo "Attempt $i: /health -> $status"
             if [ "$status" = "200" ]; then
               echo "Smoke test passed."
