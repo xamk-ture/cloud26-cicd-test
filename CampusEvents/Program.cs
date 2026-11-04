@@ -1,10 +1,14 @@
 using System.ComponentModel.DataAnnotations;
+using Azure.Core;
+using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using CampusEvents;
 using CampusEvents.Data;
 using CampusEvents.Models;
 using CampusEvents.Services;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,8 +25,29 @@ if (builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] is not null)
     builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddSource("Npgsql"));
 }
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (connectionString is not null &&
+    !connectionString.Contains("Password=", StringComparison.OrdinalIgnoreCase))
+{
+    // Passwordless: authenticate as this app's managed identity.
+    // The token (~1 h lifetime) is fetched and refreshed automatically.
+    var credential = new DefaultAzureCredential();
+    var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+    dataSourceBuilder.UsePeriodicPasswordProvider(
+        async (_, ct) => (await credential.GetTokenAsync(
+            new TokenRequestContext(["https://ossrdbms-aad.database.windows.net/.default"]), ct)).Token,
+        TimeSpan.FromMinutes(45),  // refresh well before the ~60 min expiry
+        TimeSpan.FromSeconds(10)); // on failure, retry quickly
+
+    var dataSource = dataSourceBuilder.Build();
+    builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(dataSource));
+}
+else
+{
+    // Local development: docker-compose PostgreSQL with a password. Unchanged.
+    builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+}
 
 builder.Services.AddScoped<IEventStore, PostgresEventStore>();
 
@@ -109,7 +134,8 @@ app.MapPost("/api/events", (CreateEventRequest request, IEventStore store) =>
 
     CampusEvent created = store.Create(request);
     return Results.Created($"/api/events/{created.Id}", created.ToResponse());
-});
+})
+    .AddEndpointFilter<RequireApiKey>();
 
 app.MapPut("/api/events/{id:guid}", (Guid id, UpdateEventRequest request, IEventStore store) =>
 {
@@ -129,13 +155,15 @@ app.MapPut("/api/events/{id:guid}", (Guid id, UpdateEventRequest request, IEvent
     {
         return Results.BadRequest(new { error = ex.Message });
     }
-});
+})
+    .AddEndpointFilter<RequireApiKey>();
 
 app.MapDelete("/api/events/{id:guid}", (Guid id, IEventStore store) =>
 {
     bool deleted = store.Delete(id);
     return deleted ? Results.NoContent() : Results.NotFound(new { error = "Event not found." });
-});
+})
+    .AddEndpointFilter<RequireApiKey>();
 
 app.MapPost("/api/events/{id:guid}/registrations",
     (Guid id, RegisterRequest request, IEventStore store, ILogger<Program> logger) =>
