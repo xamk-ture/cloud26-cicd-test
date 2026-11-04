@@ -149,7 +149,11 @@ resource webApp 'Microsoft.Web/sites@2024-04-01' = {
           // with the actual server. Still an Application Setting, i.e.
           // the same secrets rung as Assignment 3; Key Vault comes later.
           name: 'ConnectionStrings__DefaultConnection'
-          value: 'Host=${postgres.outputs.serverFqdn};Database=${databaseName};Username=${postgresAdminLogin};Password=${postgresAdminPassword};Ssl Mode=Require'
+          value: 'Host=${postgres.outputs.serverFqdn};Database=${databaseName};Username=${appName};Ssl Mode=Require'
+        }
+        {
+          name: 'AdminApiKey'
+          value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.vaultUri}secrets/AdminApiKey/)'
         }
         {
           // Storage key read at deploy time — derived, never hand-copied.
