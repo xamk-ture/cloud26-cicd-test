@@ -42,6 +42,7 @@ var postgresAdminLogin = 'campusadmin'
 var storageAccountName = 'stcloud26${replace(yourName, '-', '')}${environment}' // letters + digits only, 3-24 chars
 var logAnalyticsName = 'log-cloud26-${yourName}-${environment}'
 var appInsightsName  = 'appi-cloud26-${yourName}-${environment}'
+var actionGroupName  = 'ag-cloud26-${yourName}-email'
 
 var tags = {
   Environment: environment
@@ -148,6 +149,18 @@ resource webApp 'Microsoft.Web/sites@2024-04-01' = {
         }
       ]
     }
+  }
+}
+
+// --- Alerts (module) — Exercise 1: alerts as code ---
+
+module alerts 'modules/alerts.bicep' = {
+  name: 'alertsDeployment'
+  params: {
+    alertEmail: ownerEmail
+    webAppId: webApp.id
+    actionGroupName: actionGroupName
+    tags: tags
   }
 }
 
