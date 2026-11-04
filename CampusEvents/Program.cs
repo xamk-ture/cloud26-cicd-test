@@ -8,6 +8,13 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Application Insights: only when the environment provides a connection string
+// (Azure does, via Bicep). Locally and in tests the SDK is not registered at all.
+if (builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] is not null)
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -124,7 +131,8 @@ app.MapDelete("/api/events/{id:guid}", (Guid id, IEventStore store) =>
     return deleted ? Results.NoContent() : Results.NotFound(new { error = "Event not found." });
 });
 
-app.MapPost("/api/events/{id:guid}/registrations", (Guid id, RegisterRequest request, IEventStore store) =>
+app.MapPost("/api/events/{id:guid}/registrations",
+    (Guid id, RegisterRequest request, IEventStore store, ILogger<Program> logger) =>
 {
     if (!TryValidate(request, out Dictionary<string, string[]> errors))
     {
@@ -135,15 +143,20 @@ app.MapPost("/api/events/{id:guid}/registrations", (Guid id, RegisterRequest req
 
     if (error == "Event not found.")
     {
+        logger.LogWarning("Registration rejected: event {EventId} not found", id);
         return Results.NotFound(new { error });
     }
 
     if (error is not null)
     {
+        logger.LogWarning("Registration rejected for event {EventId}: {Reason}", id, error);
         return Results.Conflict(new { error });
     }
 
-    return Results.Created($"/api/events/{id}/registrations/{registration!.Id}", registration);
+    logger.LogInformation("Registration {RegistrationId} created for event {EventId}",
+        registration!.Id, id);
+
+    return Results.Created($"/api/events/{id}/registrations/{registration.Id}", registration);
 });
 
 app.MapGet("/api/events/{id:guid}/registrations", (Guid id, IEventStore store) =>
