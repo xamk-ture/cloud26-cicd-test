@@ -3,6 +3,7 @@ using Azure.Core;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using CampusEvents;
 using CampusEvents.Data;
 using CampusEvents.Models;
 using CampusEvents.Services;
