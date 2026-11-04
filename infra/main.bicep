@@ -66,7 +66,7 @@ module postgres 'modules/postgres.bicep' = {
   }
 }
 
-// --- Storage account (module — Exercise 2 refactor) ---
+// --- Storage account (module) — accessed with managed identity, no key ---
 
 module storage 'modules/storage.bicep' = {
   name: 'storageDeployment'
@@ -75,14 +75,6 @@ module storage 'modules/storage.bicep' = {
     storageAccountName: storageAccountName
     tags: tags
   }
-}
-
-// The connection string needs the account key, and module outputs must
-// not carry secrets (they land in deployment history). An 'existing'
-// reference bridges the module boundary; the web app's dependsOn
-// waits for the module — 'existing' creates no automatic ordering.
-resource storageAccountRef 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
-  name: storageAccountName
 }
 
 // --- Key Vault (module) ---
@@ -132,9 +124,6 @@ resource webApp 'Microsoft.Web/sites@2024-04-01' = {
   identity: {
     type: 'SystemAssigned'
   }
-  dependsOn: [
-    storage // 'existing' does not wait for the module; the account must exist before listKeys()
-  ]
   properties: {
     serverFarmId: appServicePlan.id
     httpsOnly: true
@@ -156,11 +145,11 @@ resource webApp 'Microsoft.Web/sites@2024-04-01' = {
           value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.vaultUri}secrets/AdminApiKey/)'
         }
         {
-          // Storage key read at deploy time — derived, never hand-copied.
-          // Same secrets rung as the DB password; Key Vault + Managed Identity
-          // removes both later in the course.
-          name: 'ConnectionStrings__Storage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${storageAccountRef.listKeys().keys[0].value};EndpointSuffix=${az.environment().suffixes.storage}'
+          // Not a secret: just the address. The BlobContainerClient uses
+          // DefaultAzureCredential — access comes from the identity's
+          // Storage Blob Data Contributor role, not from a key.
+          name: 'Storage__BlobEndpoint'
+          value: storage.outputs.blobEndpoint
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
