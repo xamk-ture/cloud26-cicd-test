@@ -43,6 +43,7 @@ var storageAccountName = 'stcloud26${replace(yourName, '-', '')}${environment}' 
 var logAnalyticsName = 'log-cloud26-${yourName}-${environment}'
 var appInsightsName  = 'appi-cloud26-${yourName}-${environment}'
 var actionGroupName  = 'ag-cloud26-${yourName}-email'
+var keyVaultName     = 'kv-cloud26-${yourName}-${environment}' // max 24 chars — keep yourName short
 
 var tags = {
   Environment: environment
@@ -84,6 +85,17 @@ resource storageAccountRef 'Microsoft.Storage/storageAccounts@2023-05-01' existi
   name: storageAccountName
 }
 
+// --- Key Vault (module) ---
+
+module keyVault 'modules/keyvault.bicep' = {
+  name: 'keyVaultDeployment'
+  params: {
+    location: location
+    keyVaultName: keyVaultName
+    tags: tags
+  }
+}
+
 // --- Monitoring (module) ---
 
 module monitoring 'modules/monitoring.bicep' = {
@@ -117,6 +129,9 @@ resource webApp 'Microsoft.Web/sites@2024-04-01' = {
   name: appName
   location: location
   tags: tags
+  identity: {
+    type: 'SystemAssigned'
+  }
   dependsOn: [
     storage // 'existing' does not wait for the module; the account must exist before listKeys()
   ]
@@ -169,3 +184,4 @@ module alerts 'modules/alerts.bicep' = {
 output webAppUrl string = 'https://${webApp.properties.defaultHostName}'
 output postgresServerFqdn string = postgres.outputs.serverFqdn
 output blobEndpoint string = storage.outputs.blobEndpoint
+output webAppPrincipalId string = webApp.identity.principalId
