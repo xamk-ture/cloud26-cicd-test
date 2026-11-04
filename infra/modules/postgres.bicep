@@ -33,8 +33,9 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' =
     administratorLogin: administratorLogin
     administratorLoginPassword: administratorLoginPassword
     authConfig: {
-      passwordAuth: 'Enabled'
-      activeDirectoryAuth: 'Disabled'
+      activeDirectoryAuth: 'Enabled'
+      passwordAuth: 'Enabled' // both, for now — the cutover comes later
+      tenantId: subscription().tenantId
     }
     network: {
       // App Service is not in a VNet. The firewall rule only works if public access is on.
