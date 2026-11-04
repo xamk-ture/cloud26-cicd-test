@@ -5,6 +5,7 @@ using CampusEvents.Data;
 using CampusEvents.Models;
 using CampusEvents.Services;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 if (builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] is not null)
 {
     builder.Services.AddApplicationInsightsTelemetry();
+
+    // The SDK listens to ASP.NET Core, HttpClient and SqlClient by default.
+    // Npgsql publishes its own traces under the "Npgsql" source — subscribe to
+    // it so every PostgreSQL command shows up as a dependency.
+    builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddSource("Npgsql"));
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
