@@ -1,8 +1,5 @@
 // Dev environment parameters.
-// The password is NOT written here. main.bicep marks it @secure(),
-// and this file only points at an environment variable.
-// Set it in the same terminal before deploying:
-//   $env:POSTGRES_ADMIN_PASSWORD = Read-Host "PostgreSQL admin password"
+// No password parameter any more: the app and the admins use Entra tokens.
 using 'main.bicep'
 
 param yourName = 'ture08'
@@ -14,4 +11,3 @@ param environment = 'dev'
 param location = 'francecentral'
 // Assignment 7 (cost management): back to F1 after the rightsizing decision — the course environment does not need B1 between sessions.
 param appServiceSku = 'F1'
-param postgresAdminPassword = readEnvironmentVariable('POSTGRES_ADMIN_PASSWORD')
