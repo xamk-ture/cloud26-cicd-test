@@ -1,0 +1,60 @@
+
+name: Morning start
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # 05:00 UTC = early morning in Finland
+  workflow_dispatch: # manual trigger for testing
+
+permissions:
+  id-token: write # OIDC
+  contents: read
+
+env:
+  RESOURCE_GROUP: rg-cloud26-${{ vars.YOUR_NAME }}-dev
+  PG_SERVER: pg-cloud26-${{ vars.YOUR_NAME }}-dev
+  APP_NAME: app-cloud26-${{ vars.YOUR_NAME }}-dev
+
+jobs:
+  start-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Idempotent: start only if the server is actually stopped.
+      - name: Start PostgreSQL if it is stopped
+        run: |
+          state=$(az postgres flexible-server show \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$PG_SERVER" \
+            --query state --output tsv)
+          echo "Server state: $state"
+          if [ "$state" = "Stopped" ]; then
+            az postgres flexible-server start \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "$PG_SERVER"
+          else
+            echo "Not in 'Stopped' state — nothing to start."
+          fi
+
+      # The server takes minutes to become Ready — do not assume, verify.
+      # Same polling pattern as the deploy workflow's smoke test.
+      - name: Wait until the app is healthy
+        run: |
+          echo "Polling https://$APP_NAME.azurewebsites.net/health ..."
+          for i in $(seq 1 20); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://$APP_NAME.azurewebsites.net/health" || true)
+            echo "Attempt $i: /health -> $status"
+            if [ "$status" = "200" ]; then
+              echo "App is healthy — good morning."
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "App is still unhealthy after the start — investigate."
+          exit 1
