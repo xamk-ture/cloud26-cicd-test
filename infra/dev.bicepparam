@@ -12,6 +12,6 @@ param environment = 'dev'
 // new customers, and PostgreSQL Burstable is refused in Sweden Central and Poland Central.
 // France Central accepts both. Resources may live in a different region than the resource group.
 param location = 'francecentral'
-// Assignment 7 (cost management): B1 so the plan shows up in Cost analysis and has real CPU/memory metrics.
-param appServiceSku = 'B1'
+// Assignment 7 (cost management): back to F1 after the rightsizing decision — the course environment does not need B1 between sessions.
+param appServiceSku = 'F1'
 param postgresAdminPassword = readEnvironmentVariable('POSTGRES_ADMIN_PASSWORD')
