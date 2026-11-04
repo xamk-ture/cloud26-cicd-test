@@ -2,7 +2,7 @@ name: Nightly cost control
 
 on:
   schedule:
-    - cron: '10 15 * * *' # TEMPORARY test slot — the real one is 0 18 * * * (18:00 UTC); cron is ALWAYS UTC
+    - cron: '0 18 * * *' # 18:00 UTC = evening in Finland — cron is ALWAYS UTC
   workflow_dispatch: # manual trigger for testing right now
 
 permissions:
