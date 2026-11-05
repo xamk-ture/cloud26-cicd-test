@@ -9,5 +9,6 @@ param environment = 'dev'
 // new customers, and PostgreSQL Burstable is refused in Sweden Central and Poland Central.
 // France Central accepts both. Resources may live in a different region than the resource group.
 param location = 'francecentral'
-// Assignment 7 (cost management): back to F1 after the rightsizing decision — the course environment does not need B1 between sessions.
-param appServiceSku = 'F1'
+// Assignment 8: F1 ran out of its 60 CPU-minutes/day (availability test + deploys) and App Service
+// stopped the site with QuotaExceeded. B1 has no daily quota.
+param appServiceSku = 'B1'
