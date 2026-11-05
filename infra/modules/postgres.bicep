@@ -11,12 +11,6 @@
 param location string
 param serverName string
 param databaseName string
-param administratorLogin string
-
-@secure()
-@description('Admin password — supplied at deploy time, never stored in a file')
-param administratorLoginPassword string
-
 param tags object = {}
 
 // --- PostgreSQL Flexible Server (Burstable B1ms — course standard) ---
@@ -30,11 +24,9 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' =
   }
   properties: {
     version: '16'
-    administratorLogin: administratorLogin
-    administratorLoginPassword: administratorLoginPassword
     authConfig: {
       activeDirectoryAuth: 'Enabled'
-      passwordAuth: 'Enabled' // both, for now — the cutover comes later
+      passwordAuth: 'Disabled' // contract phase: tokens only — campusadmin is gone
       tenantId: subscription().tenantId
     }
     network: {

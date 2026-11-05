@@ -27,8 +27,6 @@ jobs:
     # A manual run can skip this job (failure demo, Step 21)
     if: github.event_name != 'workflow_dispatch' || inputs.deploy_infra
     runs-on: ubuntu-latest
-    env:
-      POSTGRES_ADMIN_PASSWORD: ${{ secrets.PG_PASSWORD }}   # dev.bicepparam reads this
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
