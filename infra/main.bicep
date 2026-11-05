@@ -28,17 +28,12 @@ param location string = resourceGroup().location
 @description('App Service Plan SKU. F1 = free, B1 = paid (scale-out capable)')
 param appServiceSku string = 'F1'
 
-@secure()
-@description('PostgreSQL admin password — read from POSTGRES_ADMIN_PASSWORD, never stored in a file')
-param postgresAdminPassword string
-
 // --- Naming convention (course standard) and shared tags ---
 
 var planName           = 'plan-cloud26-${yourName}-${environment}'
 var appName            = 'app-cloud26-${yourName}-${environment}'
 var postgresServerName = 'pg-cloud26-${yourName}-${environment}'
 var databaseName       = 'campusevents'
-var postgresAdminLogin = 'campusadmin'
 var storageAccountName = 'stcloud26${replace(yourName, '-', '')}${environment}' // letters + digits only, 3-24 chars
 var logAnalyticsName = 'log-cloud26-${yourName}-${environment}'
 var appInsightsName  = 'appi-cloud26-${yourName}-${environment}'
@@ -60,8 +55,6 @@ module postgres 'modules/postgres.bicep' = {
     location: location
     serverName: postgresServerName
     databaseName: databaseName
-    administratorLogin: postgresAdminLogin
-    administratorLoginPassword: postgresAdminPassword
     tags: tags
   }
 }
