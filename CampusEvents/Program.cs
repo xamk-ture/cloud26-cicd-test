@@ -51,11 +51,14 @@ else
 
 builder.Services.AddScoped<IEventStore, PostgresEventStore>();
 
-var storageConnectionString = builder.Configuration.GetConnectionString("Storage");
+var blobEndpoint = builder.Configuration["Storage:BlobEndpoint"];
 
-if (storageConnectionString is not null)
+if (blobEndpoint is not null)
 {
-    builder.Services.AddSingleton(new BlobContainerClient(storageConnectionString, "posters"));
+    // Keyless: the container client authenticates as this app's managed identity
+    // (Storage Blob Data Contributor on the account). Locally: your az login.
+    builder.Services.AddSingleton(new BlobContainerClient(
+        new Uri($"{blobEndpoint}posters"), new DefaultAzureCredential()));
 }
 
 var app = builder.Build();
@@ -213,7 +216,7 @@ app.MapGet("/api/events/{id:guid}/registrations", (Guid id, IEventStore store) =
     return Results.Ok(registrations);
 });
 
-if (storageConnectionString is not null)
+if (blobEndpoint is not null)
 {
     app.MapPost("/api/events/{id:guid}/poster",
         async (Guid id, IFormFile file, BlobContainerClient posters, IEventStore store) =>
