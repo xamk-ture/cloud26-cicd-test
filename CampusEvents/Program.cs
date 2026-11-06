@@ -41,12 +41,20 @@ if (connectionString is not null &&
         TimeSpan.FromSeconds(10)); // on failure, retry quickly
 
     var dataSource = dataSourceBuilder.Build();
-    builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(dataSource));
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(dataSource, npgsql => npgsql.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorCodesToAdd: null)));
 }
 else
 {
     // Local development: docker-compose PostgreSQL with a password. Unchanged.
-    builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorCodesToAdd: null)));
 }
 
 builder.Services.AddScoped<IEventStore, PostgresEventStore>();
