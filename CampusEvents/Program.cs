@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using Azure.Core;
 using Azure.Identity;
 using Azure.Storage.Blobs;
@@ -66,7 +66,19 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+
+    if (db.Database.IsRelational())
+    {
+        // PostgreSQL: apply every migration that is not yet in __EFMigrationsHistory.
+        // A fresh database gets the whole schema; an existing one gets only the delta.
+        db.Database.Migrate();
+    }
+    else
+    {
+        // Integration tests use the InMemory provider, which has no migrations.
+        db.Database.EnsureCreated();
+    }
+
     DbSeeder.SeedIfEmpty(db);
 }
 
