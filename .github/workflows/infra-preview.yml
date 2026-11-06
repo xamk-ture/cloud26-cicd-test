@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       # PR runs present a different OIDC subject than main-branch runs:
       #   repo:<owner>/<repo>:pull_request   (not ...:ref:refs/heads/main)
