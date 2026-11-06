@@ -28,6 +28,14 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      - name: Vulnerable packages (supply-chain gate)
+        run: |
+          dotnet list package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Vulnerable packages found — update them before merging."
+            exit 1
+          fi
+
       - name: Format check (lint gate)
         run: dotnet format --verify-no-changes --no-restore
 
