@@ -24,8 +24,8 @@ param environment string = 'dev'
 
 param location string = resourceGroup().location
 
-@allowed(['F1', 'B1'])
-@description('App Service Plan SKU. F1 = free, B1 = paid (scale-out capable)')
+@allowed(['F1', 'B1', 'S1'])
+@description('App Service Plan SKU. F1 = free, B1 = paid (scale-out capable), S1 = deployment slots')
 param appServiceSku string = 'F1'
 
 // --- Naming convention (course standard) and shared tags ---
@@ -108,6 +108,33 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   tags: tags
 }
 
+// --- App settings (shared by the production site and the staging slot) ---
+
+var appSettings = [
+  {
+    // Derived from the module output — cannot drift out of sync
+    // with the actual server. Still an Application Setting, i.e.
+    // the same secrets rung as Assignment 3; Key Vault comes later.
+    name: 'ConnectionStrings__DefaultConnection'
+    value: 'Host=${postgres.outputs.serverFqdn};Database=${databaseName};Username=${appName};Ssl Mode=Require'
+  }
+  {
+    name: 'AdminApiKey'
+    value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.vaultUri}secrets/AdminApiKey/)'
+  }
+  {
+    // Not a secret: just the address. The BlobContainerClient uses
+    // DefaultAzureCredential — access comes from the identity's
+    // Storage Blob Data Contributor role, not from a key.
+    name: 'Storage__BlobEndpoint'
+    value: storage.outputs.blobEndpoint
+  }
+  {
+    name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+    value: monitoring.outputs.connectionString
+  }
+]
+
 // --- Web App ---
 
 resource webApp 'Microsoft.Web/sites@2024-04-01' = {
@@ -125,30 +152,33 @@ resource webApp 'Microsoft.Web/sites@2024-04-01' = {
       alwaysOn: appServiceSku != 'F1' // F1 does not support Always On
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
-      appSettings: [
-        {
-          // Derived from the module output — cannot drift out of sync
-          // with the actual server. Still an Application Setting, i.e.
-          // the same secrets rung as Assignment 3; Key Vault comes later.
-          name: 'ConnectionStrings__DefaultConnection'
-          value: 'Host=${postgres.outputs.serverFqdn};Database=${databaseName};Username=${appName};Ssl Mode=Require'
-        }
-        {
-          name: 'AdminApiKey'
-          value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.vaultUri}secrets/AdminApiKey/)'
-        }
-        {
-          // Not a secret: just the address. The BlobContainerClient uses
-          // DefaultAzureCredential — access comes from the identity's
-          // Storage Blob Data Contributor role, not from a key.
-          name: 'Storage__BlobEndpoint'
-          value: storage.outputs.blobEndpoint
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: monitoring.outputs.connectionString
-        }
-      ]
+      appSettings: appSettings
+    }
+  }
+}
+
+// --- Staging slot (Assignment 9, Exercise 1) — only on a tier that supports slots ---
+// Deploy to the slot, smoke-test it, then swap: production never serves a half-started app.
+// The slot has its OWN managed identity: it needs an Assignment 8 access session before it can
+// reach PostgreSQL and Key Vault.
+
+resource stagingSlot 'Microsoft.Web/sites/slots@2024-04-01' = if (appServiceSku == 'S1') {
+  parent: webApp
+  name: 'staging'
+  location: location
+  tags: tags
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    siteConfig: {
+      linuxFxVersion: 'DOTNETCORE|10.0'
+      alwaysOn: true
+      minTlsVersion: '1.2'
+      ftpsState: 'Disabled'
+      appSettings: appSettings
     }
   }
 }

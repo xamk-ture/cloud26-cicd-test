@@ -11,4 +11,4 @@ param environment = 'dev'
 param location = 'francecentral'
 // Assignment 8: F1 ran out of its 60 CPU-minutes/day (availability test + deploys) and App Service
 // stopped the site with QuotaExceeded. B1 has no daily quota.
-param appServiceSku = 'B1'
+param appServiceSku = 'S1' // Exercise 1 design PR — slots need S1; NOT merged
