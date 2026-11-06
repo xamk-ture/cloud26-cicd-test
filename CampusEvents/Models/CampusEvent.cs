@@ -1,4 +1,4 @@
-namespace CampusEvents.Models;
+﻿namespace CampusEvents.Models;
 
 public class CampusEvent
 {
@@ -9,6 +9,7 @@ public class CampusEvent
     public DateTime StartsAtUtc { get; set; }
     public int Capacity { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+    public string? Organizer { get; set; }   // nullable: existing rows have no value yet
     public List<Registration> Registrations { get; set; } = [];
 
     public int SeatsTaken => Registrations.Count;

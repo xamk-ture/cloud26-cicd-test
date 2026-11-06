@@ -1,4 +1,4 @@
-using CampusEvents.Models;
+﻿using CampusEvents.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampusEvents.Data;
@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => x.Id);
             e.Property(x => x.Title).HasMaxLength(120);
             e.Property(x => x.Location).HasMaxLength(120);
+            e.Property(x => x.Organizer).HasMaxLength(120);
             e.HasMany(x => x.Registrations)
                 .WithOne()
                 .OnDelete(DeleteBehavior.Cascade);
